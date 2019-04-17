@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strings"
 )
 
 var gcrMatcher = regexp.MustCompile(`https://([a-z]+\.|)gcr\.io/`)
@@ -132,7 +133,19 @@ func isTokenDemand(resp *http.Response) (*authService, error) {
 	if resp.StatusCode != http.StatusUnauthorized {
 		return nil, nil
 	}
-	return parseAuthHeader(resp.Header)
+	auth, err := parseAuthHeader(resp.Header)
+	if err != nil {
+		return nil, err
+	}
+	// Gitlab bug - sends wrong scope in WWW-Authenticate for DELETE requests
+	// only ...:delete but actual request needs "*" to succeed
+	req := resp.Request
+	if req != nil && req.Method == http.MethodDelete {
+		for i := 0; i < len(auth.Scope); i++ {
+			auth.Scope[i] = strings.Replace(auth.Scope[i], "delete", "*", 1)
+		}
+	}
+	return auth, nil
 }
 
 // Token returns the required token for the specific resource url. If the registry requires basic authentication, this
