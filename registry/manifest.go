@@ -111,12 +111,27 @@ func (r *Registry) PutManifest(repository, ref string, manifest distribution.Man
 		return err
 	}
 
+	// FIXME: same perms on blobs uplaod as on tagging?
+	authUrl := r.url("/v2/%s/blobs/uploads/", repository)
+	authReq, err := http.NewRequest("POST", authUrl, nil)
+	if err != nil {
+		return err
+	}
+
+	authReq.Header.Set("Content-Type", schema2.MediaTypeManifest)
+	authResp, err := r.Client.Do(authReq)
+	if authResp!= nil {
+		defer authResp.Body.Close()
+	}
+	token := authResp.Header.Get("Request-Token")
+
 	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(b))
 	if err != nil {
 		return err
 	}
 
 	req.Header.Set("Content-Type", schema2.MediaTypeManifest)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	resp, err := r.Client.Do(req)
 	if resp != nil {
 		defer resp.Body.Close()
