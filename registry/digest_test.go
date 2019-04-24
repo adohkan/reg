@@ -28,6 +28,7 @@ func TestDigestFromDockerHub(t *testing.T) {
 }
 
 func TestDigestFromGCR(t *testing.T) {
+	t.Skip("no gcr.io credentials")
 	auth, err := repoutils.GetAuthConfig("", "", "gcr.io")
 	if err != nil {
 		t.Fatalf("Could not get auth config: %s", err)
