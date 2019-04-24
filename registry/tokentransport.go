@@ -109,19 +109,24 @@ type authService struct {
 	Scope   []string
 }
 
-func (a *authService) Request(username, password, realm string) (*http.Request, error) {
-	q := a.Realm.Query()
+func (a *authService) Request(username, password, override string) (*http.Request, error) {
+	u := a.Realm
+	if override != "" {
+		var err error
+		u, err = url.ParseRequestURI(override)
+		if err != nil {
+			return nil, err
+		}
+	}
+	q := u.Query()
 	q.Set("service", a.Service)
 	for _, s := range a.Scope {
 		q.Set("scope", s)
 	}
 	//	q.Set("scope", "repository:r.j3ss.co/htop:push,pull")
-	a.Realm.RawQuery = q.Encode()
+	u.RawQuery = q.Encode()
 
-	if realm == "" {
-		realm = a.Realm.String()
-	}
-	req, err := http.NewRequest("GET", realm, nil)
+	req, err := http.NewRequest("GET", u.String(), nil)
 
 	if username != "" || password != "" {
 		req.SetBasicAuth(username, password)
