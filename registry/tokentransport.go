@@ -16,9 +16,10 @@ var gcrMatcher = regexp.MustCompile(`https://([a-z]+\.|)gcr\.io/`)
 
 // TokenTransport defines the data structure for authentication via tokens.
 type TokenTransport struct {
-	Transport http.RoundTripper
-	Username  string
-	Password  string
+	Transport       http.RoundTripper
+	Username        string
+	Password        string
+	AuthUrlOverride string
 }
 
 // RoundTrip defines the round tripper for token transport.
@@ -69,7 +70,7 @@ func (t *TokenTransport) authAndRetry(authService *authService, req *http.Reques
 }
 
 func (t *TokenTransport) auth(authService *authService) (string, *http.Response, error) {
-	authReq, err := authService.Request(t.Username, t.Password)
+	authReq, err := authService.Request(t.Username, t.Password, t.AuthUrlOverride)
 	if err != nil {
 		return "", nil, err
 	}
@@ -108,7 +109,7 @@ type authService struct {
 	Scope   []string
 }
 
-func (a *authService) Request(username, password string) (*http.Request, error) {
+func (a *authService) Request(username, password, realm string) (*http.Request, error) {
 	q := a.Realm.Query()
 	q.Set("service", a.Service)
 	for _, s := range a.Scope {
@@ -117,7 +118,10 @@ func (a *authService) Request(username, password string) (*http.Request, error) 
 	//	q.Set("scope", "repository:r.j3ss.co/htop:push,pull")
 	a.Realm.RawQuery = q.Encode()
 
-	req, err := http.NewRequest("GET", a.Realm.String(), nil)
+	if realm == "" {
+		realm = a.Realm.String()
+	}
+	req, err := http.NewRequest("GET", realm, nil)
 
 	if username != "" || password != "" {
 		req.SetBasicAuth(username, password)
@@ -193,7 +197,7 @@ func (r *Registry) Token(url string) (string, error) {
 		return "", nil
 	}
 
-	authReq, err := a.Request(r.Username, r.Password)
+	authReq, err := a.Request(r.Username, r.Password, r.AuthUrlOverride)
 	if err != nil {
 		return "", err
 	}

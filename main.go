@@ -24,9 +24,10 @@ var (
 
 	timeout time.Duration
 
-	authURL  string
-	username string
-	password string
+	authURL         string
+	authURLoverride string
+	username        string
+	password        string
 
 	debug bool
 )
@@ -66,6 +67,7 @@ func main() {
 	p.FlagSet.DurationVar(&timeout, "timeout", time.Minute, "timeout for HTTP requests")
 
 	p.FlagSet.StringVar(&authURL, "auth-url", "", "alternate URL for registry authentication (ex. auth.docker.io)")
+	p.FlagSet.StringVar(&authURLoverride, "auth-url-override", "", "override OAuth2 URL for registry token authentication")
 
 	p.FlagSet.StringVar(&username, "username", "", "username for the registry")
 	p.FlagSet.StringVar(&username, "u", "", "username for the registry")
@@ -120,11 +122,12 @@ func createRegistryClient(domain string) (*registry.Registry, error) {
 
 	// Create the registry client.
 	return registry.New(auth, registry.Opt{
-		Domain:   domain,
-		Insecure: insecure,
-		Debug:    debug,
-		SkipPing: skipPing,
-		NonSSL:   forceNonSSL,
-		Timeout:  timeout,
+		Domain:          domain,
+		AuthUrlOverride: authURLoverride,
+		Insecure:        insecure,
+		Debug:           debug,
+		SkipPing:        skipPing,
+		NonSSL:          forceNonSSL,
+		Timeout:         timeout,
 	})
 }

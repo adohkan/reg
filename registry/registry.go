@@ -17,13 +17,14 @@ import (
 
 // Registry defines the client for retrieving information from the registry API.
 type Registry struct {
-	URL      string
-	Domain   string
-	Username string
-	Password string
-	Client   *http.Client
-	Logf     LogfCallback
-	Opt      Opt
+	URL             string
+	Domain          string
+	AuthUrlOverride string
+	Username        string
+	Password        string
+	Client          *http.Client
+	Logf            LogfCallback
+	Opt             Opt
 }
 
 var reProtocol = regexp.MustCompile("^https?://")
@@ -41,13 +42,14 @@ func Log(format string, args ...interface{}) {
 
 // Opt holds the options for a new registry.
 type Opt struct {
-	Domain   string
-	Insecure bool
-	Debug    bool
-	SkipPing bool
-	NonSSL   bool
-	Timeout  time.Duration
-	Headers  map[string]string
+	Domain          string
+	AuthUrlOverride string
+	Insecure        bool
+	Debug           bool
+	SkipPing        bool
+	NonSSL          bool
+	Timeout         time.Duration
+	Headers         map[string]string
 }
 
 // New creates a new Registry struct with the given URL and credentials.
@@ -89,9 +91,10 @@ func newFromTransport(auth types.AuthConfig, transport http.RoundTripper, opt Op
 	}
 
 	tokenTransport := &TokenTransport{
-		Transport: transport,
-		Username:  auth.Username,
-		Password:  auth.Password,
+		Transport:       transport,
+		Username:        auth.Username,
+		Password:        auth.Password,
+		AuthUrlOverride: opt.AuthUrlOverride,
 	}
 	basicAuthTransport := &BasicTransport{
 		Transport: tokenTransport,
@@ -114,8 +117,9 @@ func newFromTransport(auth types.AuthConfig, transport http.RoundTripper, opt Op
 	}
 
 	registry := &Registry{
-		URL:    url,
-		Domain: reProtocol.ReplaceAllString(url, ""),
+		URL:             url,
+		Domain:          reProtocol.ReplaceAllString(url, ""),
+		AuthUrlOverride: opt.AuthUrlOverride,
 		Client: &http.Client{
 			Timeout:   opt.Timeout,
 			Transport: customTransport,
