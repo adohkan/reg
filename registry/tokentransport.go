@@ -148,8 +148,7 @@ func isTokenDemand(resp *http.Response) (*authService, error) {
 	}
 	// Gitlab bug - sends wrong scope in WWW-Authenticate for DELETE requests
 	// only ...:delete but actual request needs "*" to succeed
-	req := resp.Request
-	if req != nil && req.Method == http.MethodDelete {
+	if resp.Request != nil && resp.Request.Method == http.MethodDelete {
 		for i := 0; i < len(auth.Scope); i++ {
 			auth.Scope[i] = strings.Replace(auth.Scope[i], "delete", "*", 1)
 		}
