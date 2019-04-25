@@ -37,6 +37,7 @@ func (t *TokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if authService == nil {
 		return resp, nil
 	}
+	defer resp.Body.Close()
 
 	return t.authAndRetry(authService, req)
 }
